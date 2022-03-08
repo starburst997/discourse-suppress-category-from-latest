@@ -31,24 +31,22 @@ after_initialize do
         .pluck(:category_id)
     end
   end
-
   
   if TopicQuery.respond_to?(:results_filter_callbacks)
     suppress_categories_from_latest = Proc.new do |list_type, result, user, options|
-      if !SiteSetting.suppress_categories_from_latest_enabled ||
-          options[:tags] || (list_type != :latest)
+      if !SiteSetting.suppress_categories_from_latest_enabled || options[:tags] || (list_type != :latest)
         result
       else
-	if options[:category] && Category.suppressed_ids.include?(options[:category])
-	  # are we *explicitly* visiting a filtered category? then don't filter it
+        if options[:category] && Category.suppressed_ids.include?(options[:category])
+          # are we *explicitly* visiting a filtered category? then don't filter it
           suppressed_ids = (Category.suppressed_ids - [options[:category]]).join(',')
-	else
+        else
           suppressed_ids = Category.suppressed_ids.join(',')
-	end
+        end
         if suppressed_ids.empty?
           result
         else
-          result.where("topics.category_id not in (#{suppressed_ids})")
+          result.where("topics.category_id not in (#{suppressed_ids}) or topics.like_count > 0 or topics.posts_count > 1")
         end
       end
     end
